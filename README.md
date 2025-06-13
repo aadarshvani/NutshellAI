@@ -85,40 +85,6 @@ streamlit run main.py
 6. **Performance**: Added caching for content loading
 7. **Code Organization**: Modular structure with separated concerns
 
-### New Features:
-- Multiple summary formats
-- Configurable word limits
-- Summary history
-- Usage statistics
-- Content information display
-- Better error messages
-
-## 🎯 Interview Points
-
-### Technical Highlights:
-1. **Modular Architecture**: Clean separation of concerns
-2. **Error Handling**: Graceful error handling with user-friendly messages
-3. **Caching**: Performance optimization with Streamlit caching
-4. **Security**: Proper API key management
-5. **Validation**: Input validation and sanitization
-6. **Modern Practices**: Using latest LangChain methods
-
-### Code Quality:
-- Clear function names and structure
-- Consistent naming conventions
-- Proper imports and dependencies
-- Documentation and comments
-- Reusable components
-
-## 🚀 Future Enhancements
-
-- File upload support (PDF, DOCX)
-- Export summaries (PDF, TXT)
-- User authentication
-- Summary comparison
-- Batch processing
-- Custom prompts
-
 ## 📝 License
 
 MIT License - Feel free to use and modify as needed.
