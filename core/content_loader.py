@@ -1,47 +1,55 @@
-"""
-Simple content loading for YouTube and web content
-"""
 import streamlit as st
-from langchain_community.document_loaders import YoutubeLoader, UnstructuredURLLoader
-from core.validators import is_youtube_url
+import re
+from langchain.schema import Document
+from langchain_community.document_loaders import UnstructuredURLLoader
 
-@st.cache_data(ttl=3600, show_spinner=False)
-def load_content(url):
-    """Load content from URL with caching"""
+try:
+    from youtube_transcript_api import YouTubeTranscriptApi
+except ImportError:
+    st.error("youtube-transcript-api is not installed.")
+    raise
+
+def is_youtube_url(url):
+    return "youtube.com" in url or "youtu.be" in url
+
+def extract_video_id(url):
+    """Extracts video ID from YouTube URL"""
+    match = re.search(r"(?:v=|\/)([0-9A-Za-z_-]{11})", url)
+    return match.group(1) if match else None
+
+def load_youtube_transcript(url):
+    """Loads YouTube transcript as LangChain Document"""
+    video_id = extract_video_id(url)
+    if not video_id:
+        return None, "Invalid YouTube URL"
+
     try:
-        if is_youtube_url(url):
-            # Load YouTube content
-            loader = YoutubeLoader.from_youtube_url(url, add_video_info=True)
-        else:
-            # Load web content
-            loader = UnstructuredURLLoader(
-                urls=[url],
-                ssl_verify=True,
-                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-            )
-        
-        documents = loader.load()
-        
-        if not documents:
-            raise Exception("No content found at the provided URL")
-        
-        return documents, None
-        
+        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        text = ' '.join([t['text'] for t in transcript])
+        doc = Document(page_content=text, metadata={"source": url, "video_id": video_id})
+        return [doc], None
     except Exception as e:
-        return None, str(e)
+        return None, f"Transcript fetch failed: {e}"
+
+@st.cache_data(ttl=3600)
+def load_content(url):
+    """Loads content from YouTube or web"""
+    if is_youtube_url(url):
+        return load_youtube_transcript(url)
+    else:
+        try:
+            loader = UnstructuredURLLoader(urls=[url])
+            docs = loader.load()
+            return docs, None
+        except Exception as e:
+            return None, f"Web content load failed: {e}"
 
 def get_content_info(documents):
-    """Get basic info about loaded content"""
     if not documents:
         return {}
-    
     total_words = sum(len(doc.page_content.split()) for doc in documents)
-    metadata = documents[0].metadata
-    
-    info = {
+    return {
         "total_words": total_words,
-        "content_type": "YouTube Video" if is_youtube_url(metadata.get("source", "")) else "Web Article",
-        "title": metadata.get("title", "Unknown")
+        "source": documents[0].metadata.get("source", ""),
+        "video_id": documents[0].metadata.get("video_id", "")
     }
-    
-    return info
